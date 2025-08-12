@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Impact Font Meme Generator</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #222;
+    color: #fff;
+    text-align: center;
+    margin: 20px;
+  }
+  #meme-canvas {
+    max-width: 100%;
+    border: 2px solid #fff;
+    margin: 20px 0;
+  }
+  input[type="text"] {
+    font-size: 1.2rem;
+    padding: 8px;
+    margin: 5px;
+    width: 300px;
+    max-width: 90vw;
+    border-radius: 5px;
+    border: none;
+  }
+  input[type="file"] {
+    margin: 15px 0;
+  }
+  button {
+    font-size: 1rem;
+    padding: 10px 20px;
+    cursor: pointer;
+    margin: 10px;
+    border: none;
+    border-radius: 5px;
+    background-color: #444;
+    color: white;
+  }
+  button:hover {
+    background-color: #666;
+  }
+</style>
+</head>
+<body>
+
+<h1>Impact Font Meme Generator</h1>
+
+<input type="file" id="image-upload" accept="image/*" />
+<br />
+
+<input type="text" id="top-text" placeholder="Top Text" />
+<br />
+<input type="text" id="bottom-text" placeholder="Bottom Text" />
+<br />
+
+<button id="generate-btn">Generate Meme</button>
+<button id="download-btn" disabled>Download Meme</button>
+
+<br />
+<canvas id="meme-canvas" width="500" height="500"></canvas>
+
+<script>
+  const canvas = document.getElementById('meme-canvas');
+  const ctx = canvas.getContext('2d');
+
+  const imageUpload = document.getElementById('image-upload');
+  const topTextInput = document.getElementById('top-text');
+  const bottomTextInput = document.getElementById('bottom-text');
+  const generateBtn = document.getElementById('generate-btn');
+  const downloadBtn = document.getElementById('download-btn');
+
+  let image = new Image();
+
+  // Load image from upload
+  imageUpload.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      image.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // Draw meme function
+  function drawMeme() {
+    if (!image.src) {
+      alert('Please upload an image first!');
+      return;
+    }
+
+    // Set canvas size to image size (limit max size to 800px for performance)
+    const maxWidth = 800;
+    const scale = Math.min(maxWidth / image.width, maxWidth / image.height, 1);
+    canvas.width = image.width * scale;
+    canvas.height = image.height * scale;
+
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw image
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+    // Text styles
+    const fontSize = canvas.height / 8;
+    ctx.font = `bold ${fontSize}px Impact, Arial Black, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'white';
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = fontSize / 15;
+    ctx.lineJoin = 'round';
+
+    // Draw top text
+    const topText = topTextInput.value.toUpperCase();
+    drawTextWithOutline(topText, canvas.width / 2, fontSize, fontSize);
+
+    // Draw bottom text
+    const bottomText = bottomTextInput.value.toUpperCase();
+    drawTextWithOutline(bottomText, canvas.width / 2, canvas.height - 10, fontSize, true);
+
+    // Enable download button after drawing
+    downloadBtn.disabled = false;
+  }
+
+  // Helper to draw outlined text (stroke + fill)
+  function drawTextWithOutline(text, x, y, maxWidth, isBottom = false) {
+    if (!text) return;
+
+    // Split text to multiple lines if too long
+    const lines = splitTextIntoLines(ctx, text, canvas.width * 0.9);
+    const lineHeight = maxWidth * 1.1;
+
+    if (isBottom) {
+      // Draw lines bottom-up
+      for (let i = 0; i < lines.length; i++) {
+        const lineY = y - lineHeight * (lines.length - i - 1);
+        ctx.strokeText(lines[i], x, lineY);
+        ctx.fillText(lines[i], x, lineY);
+      }
+    } else {
+      // Draw lines top-down
+      for (let i = 0; i < lines.length; i++) {
+        const lineY = y + lineHeight * i;
+        ctx.strokeText(lines[i], x, lineY);
+        ctx.fillText(lines[i], x, lineY);
+      }
+    }
+  }
+
+  // Split long text into multiple lines for canvas
+  function splitTextIntoLines(ctx, text, maxWidth) {
+    const words = text.split(' ');
+    const lines = [];
+    let currentLine = words[0];
+
+    for (let i = 1; i < words.length; i++) {
+      const word = words[i];
+      const width = ctx.measureText(currentLine + ' ' + word).width;
+      if (width < maxWidth) {
+        currentLine += ' ' + word;
+      } else {
+        lines.push(currentLine);
+        currentLine = word;
+      }
+    }
+    lines.push(currentLine);
+    return lines;
+  }
+
+  generateBtn.addEventListener('click', drawMeme);
+
+  // Download meme image
+  downloadBtn.addEventListener('click', () => {
+    const link = document.createElement('a');
+    link.download = 'meme.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  });
+
+  // Optionally, draw a placeholder when no image uploaded
+  image.onload = () => {
+    // Auto-draw meme on image load (optional)
+    drawMeme();
+  };
+</script>
+
+</body>
+</html>
